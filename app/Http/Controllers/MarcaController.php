@@ -34,6 +34,20 @@ class MarcaController extends Controller
      */
     public function store(Request $request)
     {
+        $regras = [
+            'nome' => 'required|unique:marcas',
+            'imagem' => 'required'
+        ];
+
+        $feedback = [
+            'required' => 'O campo :attribute é obrigátorio',
+            'nome.unique' => 'O nome da marca já existe'
+        ];
+
+        $request->validate($regras, $feedback);
+        // stateless
+        // Accept: application/json (API validação) status code 422
+
         // $marca = Marca::create($request->all());
         $marca = $this->marca->create($request->all());
 
