@@ -34,21 +34,13 @@ class MarcaController extends Controller
      */
     public function store(Request $request)
     {
-        $regras = [
-            'nome' => 'required|unique:marcas',
-            'imagem' => 'required'
-        ];
-
-        $feedback = [
-            'required' => 'O campo :attribute é obrigátorio',
-            'nome.unique' => 'O nome da marca já existe'
-        ];
-
-        $request->validate($regras, $feedback);
         // stateless
         // Accept: application/json (API validação) status code 422
+        $request->validate($this->marca->rules(), $this->marca->feedback());
 
-        // $marca = Marca::create($request->all());
+        $image = $request->file('imagem');
+        $image->store('imagens','public');
+
         $marca = $this->marca->create($request->all());
 
         return response()
@@ -92,6 +84,22 @@ class MarcaController extends Controller
         if ($marca === null) {
             return response()
                 ->json(['erro' => 'Impossível realizar a atualização. Recurso pesquisado não existe'], 404);
+        }
+
+        if ($request->method() === 'PATCH') {
+            $regrasDinamicas = [];
+
+            // percorrendo todas as regras definidas no Model
+            foreach ($marca->rules() as $input => $regra) {
+                // coletar apenas as regras aplicáveis aos parâmetros parciais da requisição PATCH
+                if (array_key_exists($input, $request->all())) {
+                    $regrasDinamicas[$input] = $regra;
+                }
+            }
+
+            $request->validate($regrasDinamicas, $marca->feedback());
+        } else {
+            $request->validate($marca->rules(), $marca->feedback());
         }
 
         $marca->update($request->all());
