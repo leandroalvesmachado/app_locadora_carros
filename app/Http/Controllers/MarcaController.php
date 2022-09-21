@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Marca;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class MarcaController extends Controller
 {
@@ -38,10 +39,13 @@ class MarcaController extends Controller
         // Accept: application/json (API validação) status code 422
         $request->validate($this->marca->rules(), $this->marca->feedback());
 
-        $image = $request->file('imagem');
-        $image->store('imagens','public');
+        $imagem = $request->file('imagem');
+        $imagem_urn = $imagem->store('imagens','public');
 
-        $marca = $this->marca->create($request->all());
+        $marca = $this->marca->create([
+            'nome' => $request->nome,
+            'imagem' => $imagem_urn
+        ]);
 
         return response()
             ->json($marca, 201);
@@ -58,10 +62,6 @@ class MarcaController extends Controller
         $marca = $this->marca->find($id);
 
         if ($marca === null) {
-            // return [
-            //     'erro' => 'Recurso pesquisado não existe'
-            // ];
-
             return response()
                 ->json(['erro' => 'Recurso pesquisado não existe'], 404);
         }
@@ -102,7 +102,17 @@ class MarcaController extends Controller
             $request->validate($marca->rules(), $marca->feedback());
         }
 
-        $marca->update($request->all());
+        if ($request->file('imagem')) {
+            Storage::disk('public')->delete($marca->imagem);
+        }
+
+        $imagem = $request->file('imagem');
+        $imagem_urn = $imagem->store('imagens','public');
+
+        $marca->update([
+            'nome' => $request->nome,
+            'imagem' => $imagem_urn
+        ]);
 
         return response()
             ->json($marca, 200);
@@ -122,6 +132,8 @@ class MarcaController extends Controller
             return response()
                 ->json(['erro' => 'Impossível realizar a exclusão. Recurso pesquisado não existe'], 404);
         }
+
+        Storage::disk('public')->delete($marca->imagem);
 
         $marca->delete();
 
