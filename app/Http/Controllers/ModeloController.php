@@ -6,6 +6,8 @@ use App\Models\Modelo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
+use App\Repositories\ModeloRepository;
+
 class ModeloController extends Controller
 {
     public function __construct(Modelo $modelo)
@@ -20,34 +22,24 @@ class ModeloController extends Controller
      */
     public function index(Request $request)
     {
-        $modelos = [];
+        $modeloRepository = new ModeloRepository($this->modelo);
 
         if ($request->has('atributos_marca')) {
-            $atributosMarca = $request->atributos_marca;
-            $modelos = $this->modelo->with('marca:id,'.$atributosMarca);
+            $atributosMarca = 'marca:id,'.$request->atributos_marca;
+            $modeloRepository->selectAtributosRegistrosRelacionados($atributosMarca);
         } else {
-            $modelos = $this->modelo->with('marca');
+            $modeloRepository->selectAtributosRegistrosRelacionados('marca');
         }
 
         if ($request->has('filtro')) {
-            $condicoes = explode(':', $request->filtro);
-            $modelos = $modelos->where($condicoes[0], $condicoes[1], $condicoes[2]);
+            $modeloRepository->filtro($request->filtro);
         }
 
         if ($request->has('atributos')) {
-            // http://localhost:8000/api/modelo?atributos=id,nome,marca_id (marca_id para o with funcionar)
-            // with('marca:nome,imagem)
-
-            $atributos = $request->atributos;
-            $modelos = $modelos->selectRaw($atributos)->get();
-        } else {
-            $modelos = $modelos->get();
+            $modeloRepository->selectAtributos($request->atributos);
         }
 
-        // $modelos = $this->modelo->with('marca')->get();
-        
-        return response()
-            ->json($modelos, 200);
+        return response()->json($modeloRepository->getResultado(), 200);
     }
 
     /**
