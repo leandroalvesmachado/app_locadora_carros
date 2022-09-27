@@ -2,6 +2,6 @@
 
 @section('content')
 
-<home></home>
+<marcas></marcas>
 
 @endsection
